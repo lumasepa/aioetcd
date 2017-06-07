@@ -9,7 +9,7 @@ class Client:
     def __init__(
             self,
             host='127.0.0.1',
-            port=4001,
+            port=2379,
             protocol='http',
             read_timeout=60,
             allow_redirect=True,
@@ -130,9 +130,9 @@ class Client:
         Returns:
             str. the leader of the cluster.
         """
-        resp = yield from self._get("/v2/leader")
-        raw = yield from resp.text()
-        return raw
+        resp = yield from self._get("/v2/stats/leader")
+        raw = yield from resp.json()
+        return raw["leader"]
 
     @asyncio.coroutine
     def watch(self, key, index=None, timeout=None):

@@ -49,7 +49,7 @@ class Node:
         params = dict(wait=True, waitIndex=self.modifiedIndex + 1)
         head = yield from self.client._read_headers(self.key, None, **params)
         content = head.content.read_nowait()
-        head.close(force=True)
+        head.close()
         return bool(content)
 
 

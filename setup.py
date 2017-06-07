@@ -13,7 +13,7 @@ try:
 except:
     README = ""
 # VERSION = open(os.path.join(here, 'VERSION')).read().strip()
-VERSION = '0.1'
+VERSION = '0.2'
 AUTHOR = u'lisael'
 EMAIL = u'lisael@lisael.org'
 LICENSE = u'AGPL'
@@ -28,7 +28,7 @@ PACKAGES = [
 
 NAMESPACE_PACKAGES = []
 REQUIREMENTS = [
-    "aiohttp",
+    "aiohttp==2.1.0",
 ]
 
 SCRIPTS = [
