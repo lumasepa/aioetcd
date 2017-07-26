@@ -28,7 +28,7 @@ PACKAGES = [
 
 NAMESPACE_PACKAGES = []
 REQUIREMENTS = [
-    "aiohttp==2.1.0",
+    "aiohttp==2.2.0",
 ]
 
 SCRIPTS = [

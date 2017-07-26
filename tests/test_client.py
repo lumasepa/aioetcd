@@ -205,6 +205,7 @@ async def test_watch_iterator(event_loop, client, ctl):
     async_results = False
 
     async def iterator_watcher(key):
+        nonlocal async_results
         async_results = []
         it = await client.watch_iterator(key)
         for w in it:

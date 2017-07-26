@@ -5,7 +5,6 @@ import aioetcd
 
 
 class Client:
-
     def __init__(
             self,
             host='127.0.0.1',
@@ -54,8 +53,7 @@ class Client:
 
     # # high level operations
 
-    @asyncio.coroutine
-    def get(self, key):
+    async def get(self, key):
         """
         Returns the value of the key 'key'. Use Client.read for more
         control and to get a full detailed aioetcd.EtcdResult
@@ -64,35 +62,26 @@ class Client:
         :returns: str value of the key
         :raises: KeyError if the key doesn't exists.
         """
-        res = yield from self.read(key)
+        res = await self.read(key)
         return res
 
-    @asyncio.coroutine
-    def get_value(self, key):
-        res = yield from self.read(key)
+    async def get_value(self, key):
+        res = await self.read(key)
         if res.value is None:
             raise aioetcd.EtcdException(102)
         return res.value
 
-    @asyncio.coroutine
-    def set(self, key, value, ttl=None):
+    async def set(self, key, value, ttl=None):
         """
         set the value of the key :param key: to the value :param value:. Is an
         alias of :method write: to expose a get/set API (with only most common
         args)
 
         """
-        result = yield from self._write(key, value, ttl=ttl)
+        result = await self._write(key, value, ttl=ttl)
         return result
 
-    @asyncio.coroutine
-    def update(self, node, value, force_index=False):
-        params = {}
-        if force_index:
-            return params
-
-    @asyncio.coroutine
-    def delete(self, key, recursive=None, dir=None, **params):
+    async def delete(self, key, recursive=None, dir=None, **params):
         """
         Removed a key from etcd.
         :param str key:  Key.
@@ -113,29 +102,26 @@ class Client:
         if recursive is not None:
             params['recursive'] = recursive and "true" or "false"
         if dir is not None:
-            dir['dir'] = dir and "true" or "false"
+            params['dir'] = dir and "true" or "false"
 
-        response = yield from self._delete("/v2/keys/%s" % key, params=params)
+        response = await self._delete("/v2/keys/%s" % key, params=params)
         return self._result_from_response(response)
 
-    @asyncio.coroutine
-    def machines(self):
-        resp = yield from self._get("/v2/machines")
-        raw = yield from resp.text()
+    async def machines(self):
+        resp = await self._get("/v2/machines")
+        raw = await resp.text()
         return [m.strip() for m in raw.split(',')]
 
-    @asyncio.coroutine
-    def leader(self):
+    async def leader(self):
         """
         Returns:
             str. the leader of the cluster.
         """
-        resp = yield from self._get("/v2/stats/leader")
-        raw = yield from resp.json()
+        resp = await self._get("/v2/stats/leader")
+        raw = await resp.json()
         return raw["leader"]
 
-    @asyncio.coroutine
-    def watch(self, key, index=None, timeout=None):
+    async def watch(self, key, index=None, timeout=None):
         """
         Blocks until a new event has been received, starting at index 'index'
         :param str key:  key to watch
@@ -158,14 +144,13 @@ class Client:
             params['timeout'] = timeout
         while 42:
             try:
-                response = yield from self.read(key, None, **params)
+                response = await self.read(key, None, **params)
                 return response
             except asyncio.TimeoutError:
                 if timeout is not None:
                     raise
 
-    @asyncio.coroutine
-    def watch_iterator(self, key, index=None):
+    async def watch_iterator(self, key, index=None):
         """
         return an iterator of self.watch() coroutines
 
@@ -186,7 +171,7 @@ class Client:
         """
         # TODO: add a timeout that raises StopIteration
         if index is None:
-            result = yield from self.read(key)
+            result = await self.read(key)
             index = result.modifiedIndex
         return iter(self._watch_forever(key, index))
 
@@ -195,18 +180,16 @@ class Client:
             index += 1
             yield self.watch(key, index)
 
-    @asyncio.coroutine
-    def mkdir(self, key, ttl=None):
+    async def mkdir(self, key, ttl=None):
         """ create a dir key with the given ttl"""
-        resp = yield from self._write(key, None, dir=True, ttl=None)
+        resp = await self._write(key, None, dir=True, ttl=None)
         return resp
 
     def read_sync(self, key, **params):
         loop = asyncio.new_event_loop()
         return loop.run_until_complete(self.read(key, loop, **params))
 
-    @asyncio.coroutine
-    def _read_headers(self, key, loop=None, **params):
+    async def _read_headers(self, key, loop=None, **params):
         loop = loop if loop is not None else self.loop
         key = key.lstrip('/')
         timeout = params.pop('timeout', self.read_timeout)
@@ -215,16 +198,15 @@ class Client:
                 params[k] = v and "true" or "false"
             else:
                 params[k] = v
-        response = yield from self._get(
+        response = await self._get(
             "/v2/keys/%s" % key, params=params, timeout=timeout, loop=loop
         )
         return response
 
-    @asyncio.coroutine
-    def _decode_response(self, response, timeout=None, loop=None):
+    async def _decode_response(self, response, timeout=None, loop=None):
         if timeout is None:
             timeout = self.read_timeout
-        data = yield from asyncio.wait_for(response.text(), timeout, loop=loop)
+        data = await asyncio.wait_for(response.text(), timeout, loop=loop)
         try:
             res = json.loads(data)
             headers = response.headers
@@ -238,8 +220,7 @@ class Client:
                 'Unable to decode server response: %s\n\nData was: %s' %
                 (e, data))
 
-    @asyncio.coroutine
-    def read(self, key, loop=None, **params):
+    async def read(self, key, loop=None, **params):
         """
         Returns the value of the key 'key'.
 
@@ -263,13 +244,12 @@ class Client:
         """
         loop = loop if loop is not None else self.loop
         timeout = params.get('timeout', self.read_timeout)
-        head = yield from self._read_headers(key, loop, **params)
+        head = await self._read_headers(key, loop, **params)
         # TODO: substract current time from timeout
-        result = yield from self._result_from_response(head, timeout, loop)
+        result = await self._result_from_response(head, timeout, loop)
         return result
 
-    @asyncio.coroutine
-    def _write(self, key, value, append=False, **params):
+    async def _write(self, key, value, append=False, **params):
         """
         Writes the value for a key, possibly doing atomit Compare-and-Swap
 
@@ -307,46 +287,39 @@ class Client:
 
         method = append and self._post or self._put
         path = "/v2/keys/%s" % key
-        response = yield from method(path, params=params)
-        result = yield from self._result_from_response(response)
+        response = await method(path, params=params)
+        result = await self._result_from_response(response)
         return result
 
-    @asyncio.coroutine
-    def _result_from_response(self, response, timeout=None, loop=None):
+    async def _result_from_response(self, response, timeout=None, loop=None):
         """ Creates an EtcdResult from json dictionary """
-        params = yield from self._decode_response(response, timeout, loop)
+        params = await self._decode_response(response, timeout, loop)
         if 'errorCode' in params:
             raise aioetcd.EtcdException(params['errorCode'])
         return aioetcd.Node(**params)
 
-    @asyncio.coroutine
-    def _get(self, path, params=None, timeout=None, loop=None):
-        resp = yield from self._execute('get', path, params, timeout, loop)
+    async def _get(self, path, params=None, timeout=None, loop=None):
+        resp = await self._execute('get', path, params, timeout, loop)
         return resp
 
-    @asyncio.coroutine
-    def _put(self, path, params=None, timeout=None):
-        resp = yield from self._execute('put', path, params, timeout)
+    async def _put(self, path, params=None, timeout=None):
+        resp = await self._execute('put', path, params, timeout)
         return resp
 
-    @asyncio.coroutine
-    def _post(self, path, params=None, timeout=None):
-        resp = yield from self._execute('post', path, params, timeout)
+    async def _post(self, path, params=None, timeout=None):
+        resp = await self._execute('post', path, params, timeout)
         return resp
 
-    @asyncio.coroutine
-    def _delete(self, path, params=None, timeout=None):
-        resp = yield from self._execute('delete', path, params, timeout)
+    async def _delete(self, path, params=None, timeout=None):
+        resp = await self._execute('delete', path, params, timeout)
         return resp
 
-    @asyncio.coroutine
-    def _update_machine_cache(self):
+    async def _update_machine_cache(self):
         if self.allow_reconnect:
-            self._machine_cache = yield from self.machines()
+            self._machine_cache = await self.machines()
         self._cache_update_scheduled = False
 
-    @asyncio.coroutine
-    def _execute(self, method, path, params=None, timeout=None, loop=None):
+    async def _execute(self, method, path, params=None, timeout=None, loop=None):
         if loop is None:
             loop = self.loop
         if timeout is None:
@@ -355,7 +328,7 @@ class Client:
         # TODO: whatif self._machines_cache is empty ?
         for idx, uri in enumerate(self._machines_cache):
             try:
-                resp = yield from asyncio.wait_for(
+                resp = await asyncio.wait_for(
                     aiohttp.request(
                         method, uri + path, params=params, loop=loop
                     ),
