@@ -13,7 +13,7 @@ try:
 except:
     README = ""
 # VERSION = open(os.path.join(here, 'VERSION')).read().strip()
-VERSION = '0.2'
+VERSION = '0.3'
 AUTHOR = u'lisael'
 EMAIL = u'lisael@lisael.org'
 LICENSE = u'AGPL'
