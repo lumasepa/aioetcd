@@ -19,7 +19,7 @@ EMAIL = u'lisael@lisael.org'
 LICENSE = u'AGPL'
 URL = u'https://github.com/lisael/aioetcd'
 CLASSIFIERS = ['Development Status :: 3 - Alpha',
-               'Programming Language :: Python :: 3.4',
+               'Programming Language :: Python :: 3.5',
                'License :: Other/Proprietary License']
 KEYWORDS = ['asyncio', 'etcd']
 PACKAGES = [
@@ -28,7 +28,7 @@ PACKAGES = [
 
 NAMESPACE_PACKAGES = []
 REQUIREMENTS = [
-    "aiohttp==2.2.0",
+    "aiohttp==2.2.3",
 ]
 
 SCRIPTS = [
